@@ -11,8 +11,9 @@ Complete guide to set up, configure, and deploy the Vebanet e-commerce platform.
 3. [Environment Variables](#environment-variables)
 4. [Database Setup](#database-setup)
 5. [Running the Application](#running-the-application)
-6. [Deployment](#deployment)
-7. [Post-Deployment](#post-deployment)
+6. [Feature Configuration](#feature-configuration)
+7. [Deployment](#deployment)
+8. [Post-Deployment](#post-deployment)
 
 ---
 
@@ -75,7 +76,10 @@ cp .env.template .env
 # Medusa Backend URL
 NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9000
 
-# Optional: Analytics, etc.
+# Stripe (for client-side)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxxxxxxxx
+
+# Optional: Analytics
 # NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
 ```
 
@@ -99,9 +103,6 @@ DATABASE_URL=postgres://postgres:password@db.xxxxxxxxxxxx.supabase.co:5432/postg
 # Option 4: Railway
 DATABASE_URL=postgres://postgres:password@containers-us-west-xxx.railway.app:5432/railway
 
-# Option 5: PlanetScale (MySQL - requires adapter)
-# Not recommended for Medusa
-
 # ============================================
 # REDIS (Optional but recommended for production)
 # ============================================
@@ -110,9 +111,6 @@ REDIS_URL=
 
 # Upstash Redis (Serverless - Recommended)
 # REDIS_URL=rediss://default:xxxx@us1-xxx-xxx.upstash.io:6379
-
-# Railway Redis
-# REDIS_URL=redis://default:xxx@containers-us-west-xxx.railway.app:6379
 
 # ============================================
 # CORS (Adjust for your domains)
@@ -142,7 +140,7 @@ COOKIE_SECRET=your-super-secret-cookie-key-min-32-chars
 MEDUSA_ADMIN_ONBOARDING_TYPE=default
 
 # ============================================
-# FILE STORAGE (S3-Compatible)
+# FILE STORAGE (S3-Compatible) - Optional
 # ============================================
 # AWS S3
 # S3_FILE_URL=https://your-bucket.s3.amazonaws.com
@@ -152,34 +150,41 @@ MEDUSA_ADMIN_ONBOARDING_TYPE=default
 # S3_BUCKET=vebanet-media
 
 # Cloudflare R2 (S3-compatible, no egress fees)
-# S3_FILE_URL=https://your-account-id.r2.cloudflarestorage.com
+# S3_FILE_URL=https://pub-xxxxx.r2.dev
 # S3_ACCESS_KEY_ID=xxxx
 # S3_SECRET_ACCESS_KEY=xxxx
+# S3_ENDPOINT=https://xxxxx.r2.cloudflarestorage.com
 # S3_REGION=auto
 # S3_BUCKET=vebanet-media
 
-# ============================================
-# PAYMENTS (Add when ready)
-# ============================================
-# Stripe
-# STRIPE_API_KEY=sk_live_xxxx
-# STRIPE_WEBHOOK_SECRET=whsec_xxxx
-
-# PayPal
-# PAYPAL_CLIENT_ID=xxxx
-# PAYPAL_CLIENT_SECRET=xxxx
-# PAYPAL_SANDBOX=false
+# DigitalOcean Spaces
+# S3_FILE_URL=https://vebanet.nyc3.digitaloceanspaces.com
+# S3_ACCESS_KEY_ID=xxxx
+# S3_SECRET_ACCESS_KEY=xxxx
+# S3_ENDPOINT=https://nyc3.digitaloceanspaces.com
+# S3_REGION=nyc3
+# S3_BUCKET=vebanet
 
 # ============================================
-# EMAIL (Add when ready)
+# STRIPE PAYMENTS (Required for checkout)
 # ============================================
-# SendGrid
-# SENDGRID_API_KEY=SG.xxxx
-# SENDGRID_FROM=noreply@vebanet.com
+STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Resend
-# RESEND_API_KEY=re_xxxx
-# RESEND_FROM=noreply@vebanet.com
+# Get your keys at: https://dashboard.stripe.com/apikeys
+# Set up webhook at: https://dashboard.stripe.com/webhooks
+# Webhook endpoint: https://api.yourdomain.com/store/payment/webhook
+
+# ============================================
+# RESEND EMAIL (Required for notifications)
+# ============================================
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+FROM_EMAIL=Vebanet <noreply@vebanet.com>
+FRONTEND_URL=http://localhost:3000
+
+# Get your API key at: https://resend.com/api-keys
+# Verify your domain at: https://resend.com/domains
 ```
 
 ---
@@ -270,6 +275,116 @@ npm run dev
 
 ---
 
+## Feature Configuration
+
+### Stripe Payments
+
+Stripe is **already configured** in the backend. You just need to add your API keys.
+
+1. **Get API Keys:**
+   - Go to [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
+   - Copy `Publishable key` and `Secret key`
+
+2. **Set Up Webhook:**
+   - Go to [Stripe Webhooks](https://dashboard.stripe.com/webhooks)
+   - Add endpoint: `https://api.yourdomain.com/store/payment/webhook`
+   - Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`
+   - Copy the webhook signing secret
+
+3. **Add to backend/.env:**
+   ```env
+   STRIPE_SECRET_KEY=sk_test_xxxxx
+   STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
+   STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+   ```
+
+4. **Test with Stripe CLI (development):**
+   ```bash
+   # Install Stripe CLI
+   brew install stripe/stripe-cli/stripe
+
+   # Login
+   stripe login
+
+   # Forward webhooks to local
+   stripe listen --forward-to localhost:9000/store/payment/webhook
+   ```
+
+**Test Card Numbers:**
+- Success: `4242 4242 4242 4242`
+- Decline: `4000 0000 0000 0002`
+- 3D Secure: `4000 0025 0000 3155`
+
+### Resend Email Notifications
+
+Resend is **already configured** with email templates for:
+- Order confirmation
+- Shipping notification
+- Welcome email (new customer)
+
+1. **Get API Key:**
+   - Go to [Resend](https://resend.com)
+   - Create account → API Keys → Create API Key
+
+2. **Verify Domain (for production):**
+   - Go to Resend → Domains → Add Domain
+   - Add DNS records to your domain
+   - Wait for verification
+
+3. **Add to backend/.env:**
+   ```env
+   RESEND_API_KEY=re_xxxxx
+   FROM_EMAIL=Vebanet <noreply@vebanet.com>
+   FRONTEND_URL=https://vebanet.com
+   ```
+
+**Email Events Triggered:**
+| Event | Email Sent |
+|-------|------------|
+| `customer.created` | Welcome email |
+| `order.placed` | Order confirmation |
+| `order.fulfillment_created` | Shipping notification |
+
+### S3 File Storage
+
+For production, configure S3-compatible storage:
+
+```env
+# Cloudflare R2 (recommended - no egress fees)
+S3_FILE_URL=https://pub-xxxxx.r2.dev
+S3_ACCESS_KEY_ID=xxxxx
+S3_SECRET_ACCESS_KEY=xxxxx
+S3_ENDPOINT=https://xxxxx.r2.cloudflarestorage.com
+S3_REGION=auto
+S3_BUCKET=vebanet-media
+```
+
+### User Authentication
+
+Authentication is handled via:
+- **Frontend:** Zustand store with persistence (`useAuthStore`)
+- **Backend:** Medusa customer API
+
+The auth flow:
+1. User clicks "Sign In" → Opens AuthModal
+2. User submits email/password
+3. Frontend calls Medusa auth API
+4. Token stored in Zustand (persisted to localStorage)
+5. User redirected to account pages
+
+**Demo Mode:** Currently accepts any email/password for testing.
+
+### Checkout Flow
+
+Multi-step checkout at `/checkout`:
+
+1. **Shipping** - Select address + shipping method
+2. **Payment** - Enter card details (Stripe)
+3. **Review** - Confirm order details
+4. **Confirmation** - Order success page
+
+---
+
 ## Deployment
 
 ### Storefront → Vercel (Recommended)
@@ -283,6 +398,7 @@ vercel
 
 # Set environment variables in Vercel dashboard:
 # NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.vebanet.com
+# NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
 ```
 
 **Or via GitHub:**
@@ -375,64 +491,39 @@ AUTH_CORS=https://vebanet.com,https://api.vebanet.com
 **Railway (Backend):**
 - Settings → Domains → Add `api.vebanet.com`
 
-### 3. Enable HTTPS
+### 3. Update Frontend URL
 
-Both Vercel and Railway provide automatic SSL certificates.
-
-### 4. Set Up Stripe (Payments)
-
-```bash
-cd backend
-yarn add @medusajs/medusa-payment-stripe
+In backend/.env for emails:
+```env
+FRONTEND_URL=https://vebanet.com
 ```
 
-Add to `medusa-config.ts`:
+### 4. Set Up Stripe Webhook (Production)
+
+1. Go to Stripe Dashboard → Webhooks
+2. Add endpoint: `https://api.vebanet.com/store/payment/webhook`
+3. Copy new webhook secret
+4. Update `STRIPE_WEBHOOK_SECRET` in backend
+
+### 5. Connect Storefront to Medusa API
+
+To switch from mock data to live Medusa API, update the hooks:
+
 ```typescript
-modules: [
-  {
-    resolve: "@medusajs/medusa-payment-stripe",
-    options: {
-      api_key: process.env.STRIPE_API_KEY,
+// src/lib/hooks/useProducts.ts
+// Change from mock data to API calls
+
+import api from '@/lib/api';
+
+export function useProducts() {
+  return useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const response = await api.getProducts();
+      return response.products;
     },
-  },
-]
-```
-
-### 5. Set Up File Storage (S3/R2)
-
-```bash
-cd backend
-yarn add @medusajs/file-s3
-```
-
-Add to `medusa-config.ts`:
-```typescript
-modules: [
-  {
-    resolve: "@medusajs/file-s3",
-    options: {
-      file_url: process.env.S3_FILE_URL,
-      access_key_id: process.env.S3_ACCESS_KEY_ID,
-      secret_access_key: process.env.S3_SECRET_ACCESS_KEY,
-      region: process.env.S3_REGION,
-      bucket: process.env.S3_BUCKET,
-    },
-  },
-]
-```
-
-### 6. Connect Storefront to Medusa API
-
-Update storefront to fetch from Medusa instead of mock data:
-
-```typescript
-// src/lib/medusa.ts
-import Medusa from "@medusajs/medusa-js"
-
-export const medusa = new Medusa({
-  baseUrl: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000",
-  maxRetries: 3,
-})
+  });
+}
 ```
 
 ---
@@ -449,19 +540,76 @@ export const medusa = new Medusa({
 - [ ] Start backend (yarn dev)
 - [ ] Start storefront (npm run dev)
 - [ ] Access admin panel
+- [ ] Test login/register flow
+- [ ] Test checkout flow
 
 ### Production
 - [ ] Generate secure JWT_SECRET and COOKIE_SECRET
 - [ ] Set up production database (Neon/Supabase/Railway)
+- [ ] Configure Stripe (live keys)
+- [ ] Configure Resend (verified domain)
+- [ ] Set up file storage (S3/R2)
 - [ ] Deploy backend to Railway/DigitalOcean
 - [ ] Deploy storefront to Vercel
 - [ ] Configure custom domains
 - [ ] Update CORS settings
-- [ ] Set up file storage (S3/R2)
-- [ ] Set up payment provider (Stripe)
-- [ ] Set up email provider (SendGrid/Resend)
-- [ ] Test checkout flow
+- [ ] Set up Stripe webhook (production URL)
+- [ ] Test full checkout flow
 - [ ] Set up monitoring/analytics
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         STOREFRONT                               │
+│                    (Next.js 16 + React)                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Components          │  State (Zustand)    │  API Layer          │
+│  ─────────────────   │  ────────────────   │  ──────────────     │
+│  • Header            │  • useCartStore     │  • api.ts           │
+│  • AuthModal         │  • useAuthStore     │  • useProducts.ts   │
+│  • CartDrawer        │  • useWishlistStore │  • useReviews.ts    │
+│  • ProductCard       │  • useCheckoutStore │  • useOrders.ts     │
+│  • ReviewCard        │  • useUIStore       │                     │
+│  • NotificationToast │  • useOrderStore    │                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Pages                                                           │
+│  ─────                                                           │
+│  /                   Homepage                                    │
+│  /category/[slug]    Category products                           │
+│  /product/[slug]     Product detail + reviews                    │
+│  /checkout           Multi-step checkout                         │
+│  /account            Profile management                          │
+│  /account/orders     Order history                               │
+│  /account/wishlist   Saved products                              │
+│  /account/addresses  Address management                          │
+│  /account/settings   Preferences                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ API Calls
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         BACKEND                                  │
+│                      (Medusa v2)                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  Modules             │  Custom APIs        │  Subscribers        │
+│  ───────             │  ───────────        │  ───────────        │
+│  • Payment (Stripe)  │  /store/payment     │  order.placed       │
+│  • File (S3)         │  /store/email       │  order.fulfilled    │
+│                      │  /store/payment/    │  customer.created   │
+│                      │    webhook          │                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Integrations                                                    │
+│  ────────────                                                    │
+│  • Stripe - Payments & webhooks                                  │
+│  • Resend - Transactional emails                                 │
+│  • S3/R2  - File storage                                         │
+│  • PostgreSQL - Database                                         │
+│  • Redis - Caching (optional)                                    │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -487,10 +635,27 @@ export const medusa = new Medusa({
 - Try `yarn medusa db:migrate --force`
 - Check PostgreSQL version (14+ required)
 
+### Stripe webhook not working
+- Verify webhook URL is accessible
+- Check STRIPE_WEBHOOK_SECRET is correct
+- Use Stripe CLI for local testing
+
+### Emails not sending
+- Verify RESEND_API_KEY is correct
+- Check domain is verified in Resend dashboard
+- Check FROM_EMAIL matches verified domain
+
+### Auth not persisting
+- Check browser localStorage is enabled
+- Clear localStorage and try again
+- Verify Zustand persist middleware is working
+
 ---
 
 ## Support
 
 - **Medusa Docs:** https://docs.medusajs.com
 - **Next.js Docs:** https://nextjs.org/docs
+- **Stripe Docs:** https://stripe.com/docs
+- **Resend Docs:** https://resend.com/docs
 - **Discord:** https://discord.gg/medusajs
