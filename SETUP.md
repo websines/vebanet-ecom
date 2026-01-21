@@ -63,7 +63,7 @@ cp .env.example .env.local
 
 # Backend
 cd backend
-cp .env.template .env
+cp .env.example .env
 ```
 
 ---
