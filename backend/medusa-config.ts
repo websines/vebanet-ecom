@@ -24,6 +24,21 @@ const fileModuleConfig = process.env.S3_BUCKET
     }
   : undefined // Use local file storage in development
 
+// Stripe Payment Provider Configuration
+const stripeModuleConfig = process.env.STRIPE_SECRET_KEY
+  ? {
+      resolve: '@medusajs/payment-stripe',
+      options: {
+        apiKey: process.env.STRIPE_SECRET_KEY,
+        webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+        // Enable automatic payment methods
+        capture: true,
+        // Enable automatic tax calculation (requires Stripe Tax)
+        automaticPaymentMethods: true,
+      },
+    }
+  : undefined
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
@@ -44,6 +59,10 @@ module.exports = defineConfig({
     // S3-compatible file storage (only if configured)
     ...(fileModuleConfig
       ? [{ resolve: Modules.FILE, options: fileModuleConfig }]
+      : []),
+    // Stripe payment provider (only if configured)
+    ...(stripeModuleConfig
+      ? [{ resolve: Modules.PAYMENT, options: { providers: [stripeModuleConfig] } }]
       : []),
   ],
 })

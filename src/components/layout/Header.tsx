@@ -10,8 +10,12 @@ import {
   X,
   ChevronDown,
   User,
+  Heart,
+  LogOut,
+  Package,
+  Settings,
 } from 'lucide-react';
-import { useCartStore, useUIStore } from '@/store/useStore';
+import { useCartStore, useUIStore, useAuthStore, useWishlistStore } from '@/store/useStore';
 import { categories } from '@/data/categories';
 import { MobileMenu } from './MobileMenu';
 import { SearchOverlay } from './SearchOverlay';
@@ -20,9 +24,12 @@ import { CartDrawer } from '../cart/CartDrawer';
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const { isMenuOpen, isSearchOpen, isCartOpen, setMenuOpen, setSearchOpen, setCartOpen } = useUIStore();
+  const { isMenuOpen, isSearchOpen, isCartOpen, setMenuOpen, setSearchOpen, setCartOpen, setAuthModalOpen } = useUIStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const itemCount = useCartStore((state) => state.getItemCount());
+  const wishlistCount = useWishlistStore((state) => state.items.length);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -127,14 +134,78 @@ export function Header() {
                 <Search className="w-5 h-5" />
               </button>
 
-              {/* Account */}
+              {/* Wishlist */}
               <Link
-                href="/account"
-                className="hidden sm:flex p-2.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
-                aria-label="Account"
+                href="/account/wishlist"
+                className="hidden sm:flex relative p-2.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
+                aria-label="Wishlist"
               >
-                <User className="w-5 h-5" />
+                <Heart className="w-5 h-5" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {wishlistCount > 9 ? '9+' : wishlistCount}
+                  </span>
+                )}
               </Link>
+
+              {/* Account */}
+              <div className="relative hidden sm:block">
+                {isAuthenticated ? (
+                  <div
+                    onMouseEnter={() => setShowUserMenu(true)}
+                    onMouseLeave={() => setShowUserMenu(false)}
+                  >
+                    <button
+                      className="flex items-center gap-2 p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                        {user?.firstName?.charAt(0).toUpperCase()}
+                      </div>
+                    </button>
+                    {showUserMenu && (
+                      <div className="absolute top-full right-0 pt-2">
+                        <div className="bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl p-2 min-w-[200px] shadow-lg">
+                          <div className="px-4 py-2 border-b border-[var(--border-subtle)] mb-2">
+                            <p className="text-white font-medium">{user?.firstName} {user?.lastName}</p>
+                            <p className="text-[var(--text-muted)] text-sm">{user?.email}</p>
+                          </div>
+                          <Link href="/account" className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] rounded-lg transition-colors">
+                            <User className="w-4 h-4" />
+                            My Account
+                          </Link>
+                          <Link href="/account/orders" className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] rounded-lg transition-colors">
+                            <Package className="w-4 h-4" />
+                            Orders
+                          </Link>
+                          <Link href="/account/wishlist" className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] rounded-lg transition-colors">
+                            <Heart className="w-4 h-4" />
+                            Wishlist
+                          </Link>
+                          <Link href="/account/settings" className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-subtle)] rounded-lg transition-colors">
+                            <Settings className="w-4 h-4" />
+                            Settings
+                          </Link>
+                          <button
+                            onClick={logout}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Logout
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAuthModalOpen(true, 'login')}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
+                  >
+                    <User className="w-5 h-5" />
+                    Sign In
+                  </button>
+                )}
+              </div>
 
               {/* Cart */}
               <button

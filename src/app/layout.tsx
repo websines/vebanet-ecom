@@ -3,6 +3,8 @@ import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import AuthModal from "@/components/auth/AuthModal";
+import NotificationToast from "@/components/ui/NotificationToast";
 
 export const metadata: Metadata = {
   title: "Vebanet - Premium Electronics Store",
@@ -26,6 +28,8 @@ export default function RootLayout({
             </main>
             <Footer />
           </div>
+          <AuthModal />
+          <NotificationToast />
         </Providers>
       </body>
     </html>
