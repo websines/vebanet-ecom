@@ -1,36 +1,154 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vebanet - Premium Electronics Store
 
-## Getting Started
+A full-fledged e-commerce platform for electronics, built with Next.js and Medusa.
 
-First, run the development server:
+## Tech Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Storefront (Customer-facing)
+- **Next.js 16** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS 4** - Utility-first styling
+- **Zustand** - State management (cart, UI)
+- **React Query** - Data fetching and caching
+- **Framer Motion** - Animations
+
+### Backend (Admin & API)
+- **Medusa v2** - Headless commerce engine
+- **PostgreSQL** - Database
+- **Redis** (optional) - Caching and queues
+
+## Project Structure
+
+```
+vebanet-ecom/
+├── src/                    # Next.js storefront
+│   ├── app/               # Pages and routes
+│   ├── components/        # React components
+│   ├── data/              # Mock data (categories, products)
+│   ├── lib/               # Utilities and providers
+│   ├── store/             # Zustand stores
+│   └── types/             # TypeScript types
+├── backend/               # Medusa backend
+│   ├── src/               # Custom modules and API
+│   └── .env               # Environment config
+└── package.json
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quick Start
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. Storefront (Frontend)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# From project root
+npm install
+npm run dev
+```
 
-## Learn More
+Open http://localhost:3000
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Backend (Medusa)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# Configure database
+cd backend
+cp .env.template .env
+# Edit .env and set DATABASE_URL
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Run migrations and start
+yarn medusa db:migrate
+yarn dev
+```
 
-## Deploy on Vercel
+- **API**: http://localhost:9000
+- **Admin Panel**: http://localhost:9000/app
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Database Setup
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Configure `backend/.env` with your PostgreSQL connection:
+
+```env
+# Local PostgreSQL
+DATABASE_URL=postgres://user:password@localhost:5432/vebanet_medusa
+
+# Neon (serverless)
+DATABASE_URL=postgres://user:password@ep-xxx.us-east-1.aws.neon.tech/vebanet
+
+# Supabase
+DATABASE_URL=postgres://postgres:password@db.xxx.supabase.co:5432/postgres
+
+# Railway
+DATABASE_URL=postgres://postgres:xxx@xxx.railway.app:5432/railway
+```
+
+## Categories
+
+The store includes 14 product categories (mirroring PcComponentes):
+
+1. Components (GPUs, CPUs, RAM, etc.)
+2. Computers (Laptops, Desktops)
+3. Peripherals (Keyboards, Mice, Monitors)
+4. Consoles & Gaming
+5. Smartphones & Tablets
+6. TVs
+7. Home Appliances
+8. Smart Home
+9. Audio
+10. Smartwatches & Wearables
+11. Photography
+12. Networking
+13. Urban Mobility
+14. Toys & Games
+
+## Features
+
+- [x] Homepage with hero, categories, featured products
+- [x] Category pages with filtering
+- [x] Product detail pages
+- [x] Shopping cart drawer
+- [x] Search overlay
+- [x] Mobile responsive design
+- [x] Dark premium theme
+- [ ] User authentication
+- [ ] Checkout flow
+- [ ] Payment integration (Stripe)
+- [ ] Order management
+- [ ] Wishlist
+
+## Deployment
+
+### Storefront
+Deploy to **Vercel** or any Node.js hosting:
+```bash
+npm run build
+npm start
+```
+
+### Backend
+Deploy Medusa to **Railway**, **DigitalOcean**, or **AWS**:
+```bash
+cd backend
+yarn build
+yarn start
+```
+
+## Environment Variables
+
+### Storefront (.env.local)
+```env
+NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9000
+```
+
+### Backend (backend/.env)
+```env
+DATABASE_URL=your-postgres-url
+REDIS_URL=your-redis-url (optional)
+JWT_SECRET=your-secret-key
+COOKIE_SECRET=your-cookie-secret
+STORE_CORS=http://localhost:3000
+ADMIN_CORS=http://localhost:9000
+AUTH_CORS=http://localhost:9000,http://localhost:3000
+```
+
+## License
+
+MIT
