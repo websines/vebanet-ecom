@@ -1,4 +1,4 @@
-import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { loadEnv, defineConfig, Modules } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
@@ -6,6 +6,23 @@ loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 if (!process.env.DATABASE_URL) {
   console.warn('⚠️  DATABASE_URL is not set. Please configure it in .env file.')
 }
+
+// S3-compatible file storage configuration
+// Works with: AWS S3, Cloudflare R2, DigitalOcean Spaces, MinIO, etc.
+const fileModuleConfig = process.env.S3_BUCKET
+  ? {
+      resolve: '@medusajs/file-s3',
+      options: {
+        file_url: process.env.S3_FILE_URL,
+        access_key_id: process.env.S3_ACCESS_KEY_ID,
+        secret_access_key: process.env.S3_SECRET_ACCESS_KEY,
+        region: process.env.S3_REGION || 'auto',
+        bucket: process.env.S3_BUCKET,
+        // For S3-compatible services (R2, Spaces, MinIO)
+        endpoint: process.env.S3_ENDPOINT,
+      },
+    }
+  : undefined // Use local file storage in development
 
 module.exports = defineConfig({
   projectConfig: {
@@ -23,4 +40,10 @@ module.exports = defineConfig({
     // Admin panel runs at /app by default
     backendUrl: process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000',
   },
+  modules: [
+    // S3-compatible file storage (only if configured)
+    ...(fileModuleConfig
+      ? [{ resolve: Modules.FILE, options: fileModuleConfig }]
+      : []),
+  ],
 })

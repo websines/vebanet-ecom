@@ -2669,7 +2669,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@medusajs/file-s3@npm:2.12.5":
+"@medusajs/file-s3@npm:2.12.5, @medusajs/file-s3@npm:^2.12.5":
   version: 2.12.5
   resolution: "@medusajs/file-s3@npm:2.12.5"
   dependencies:
@@ -9283,6 +9283,7 @@ __metadata:
   dependencies:
     "@medusajs/admin-sdk": "npm:2.12.5"
     "@medusajs/cli": "npm:2.12.5"
+    "@medusajs/file-s3": "npm:^2.12.5"
     "@medusajs/framework": "npm:2.12.5"
     "@medusajs/medusa": "npm:2.12.5"
     "@medusajs/test-utils": "npm:2.12.5"
